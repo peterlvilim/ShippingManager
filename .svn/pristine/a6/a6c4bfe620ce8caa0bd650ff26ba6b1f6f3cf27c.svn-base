@@ -1,0 +1,164 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using System.Text.RegularExpressions;
+namespace RRS
+{
+    public partial class AddInvoice : Form
+    {
+        
+        MySQL_Invoices mysql_invoices;
+        MySQL_LineItems mysql_lineitems;
+        Invoice newinvoice;
+        DateTime currentday;
+        double latitude;
+        double longitude;
+        DriverInfo driver;
+        bool flag;
+        public void SetDay(DateTime day,bool flag,DriverInfo driver)
+        {
+            currentday = day;
+            this.driver = driver;
+            this.flag = flag;
+        }
+
+        public AddInvoice()
+        {
+            this.TopLevel = true;
+            
+            this.MaximizeBox = false;
+            
+            InitializeComponent();
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                //check blank fields
+                if (textInvoice.Text == "" || textValue.Text == "" || textCustomer.Text == "" || textStreet.Text == "" || textCity.Text == "" || textState.Text == "")
+                {
+                    toolStripStatusLabel2.Text = "Some required fields are blank.";
+                    return;
+                }
+                string pattern = @"^\$?\-?([1-9]{1}[0-9]{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\-?\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\(\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))\)$";
+                if (!Regex.IsMatch(textValue.Text, pattern))
+                {
+                    textValue.Focus();
+                    toolStripStatusLabel2.Text = "Value must be a U.S. dollar amount (dollar symbol is optional).";
+                    return;
+                }
+                pattern = @"^[0-9]+$";
+                if (!Regex.IsMatch(textInvoice.Text, pattern))
+                {
+                    textInvoice.Focus();
+                    toolStripStatusLabel2.Text = "Invoice number must be a number.";
+                    return;
+                }
+                
+
+                newinvoice = new Invoice(Int32.Parse(textInvoice.Text), DataFormat.FormatMoneyToInt(textValue.Text), currentday, textCustomer.Text, textStreet.Text, "", textCity.Text, textState.Text, textZip.Text, longitude, latitude, currentday.AddYears(1));
+                List < Invoice > toadd = new List<Invoice>();
+                toadd.Add(newinvoice);
+                mysql_invoices.AddInvoices(toadd,false);
+            }
+            catch {
+                toolStripStatusLabel2.Text = "Failed to update invoice.";
+                return;
+            }
+            if (flag == true)
+            {
+                DeliverySchedule deliveryschedule = new DeliverySchedule();
+                deliveryschedule.SetDate(currentday);
+                deliveryschedule.Show();
+                this.Close();
+            }
+            else
+            {
+                ConfigureTruckRoute configureroute = new ConfigureTruckRoute();
+                configureroute.SetData(currentday, driver);
+                configureroute.Show();
+            }
+            this.Close();
+        }
+
+        private void Cancel_Click(object sender, EventArgs e)
+        {
+            if (flag == true)
+            {
+                DeliverySchedule deliveryschedule = new DeliverySchedule();
+                deliveryschedule.SetDate(currentday);
+                deliveryschedule.Show();
+                this.Close();
+            }
+            else
+            {
+                ConfigureTruckRoute configureroute = new ConfigureTruckRoute();
+                configureroute.SetData(currentday, driver);
+                configureroute.Show();
+            }
+                this.Close();
+        }
+
+        private void AddInvoice_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                latitude = 0;
+                longitude = 0;
+                textInvoice.Text = "";
+                textValue.Text = "";
+                textCustomer.Text = "";
+                textStreet.Text = "";
+                textCity.Text = "";
+                textZip.Text = "";
+                textState.Text = "";
+                listItems.Items.Clear();
+                Add.Enabled = true;
+                toolStripStatusLabel2.Text = "";
+                mysql_invoices = new MySQL_Invoices(GlobalVar.sqlhost, GlobalVar.sqlport, GlobalVar.sqldatabase, GlobalVar.sqlusername, "");
+                mysql_lineitems = new MySQL_LineItems(GlobalVar.sqlhost, GlobalVar.sqlport, GlobalVar.sqldatabase, GlobalVar.sqlusername, "");
+                
+            }
+            catch
+            {
+                Cancel_Click(null, null);
+            }
+        }
+
+        private void textInvoice_Leave(object sender, EventArgs e)
+        {
+            string pattern = @"^[0-9]+$";
+            if (!Regex.IsMatch(textInvoice.Text, pattern))
+            {
+                textInvoice.Focus();
+                toolStripStatusLabel2.Text = "Invoice number must be a number.";
+            }
+            else
+            {
+                toolStripStatusLabel2.Text = "";
+            }
+        }
+
+        private void textValue_Leave(object sender, EventArgs e)
+        {
+            string pattern = @"^\$?\-?([1-9]{1}[0-9]{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\-?\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\(\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))\)$";
+
+            if (!Regex.IsMatch(textValue.Text, pattern))
+            {
+                textValue.Focus();
+
+
+                toolStripStatusLabel2.Text = "Value must be a U.S. dollar amount (dollar symbol is optional).";
+            }
+            else
+            {
+                toolStripStatusLabel2.Text = "";
+            }
+        }
+    }
+}

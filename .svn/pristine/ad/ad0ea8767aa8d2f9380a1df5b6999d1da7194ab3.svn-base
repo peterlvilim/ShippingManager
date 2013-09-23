@@ -1,0 +1,190 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.IO;
+using System.Data.OleDb;
+namespace RRS
+{
+
+    class RRSDataReader
+    {
+        string invoicefile;
+        string linefile;
+        //public RRSDataInvoices rawinvoices;
+        public List<Invoice> rawinvoices;
+        public List<LineItem> rawlineitems;
+        public RRSDataReader(string invoiceinputfile,string lineinputfile)
+        {
+            this.invoicefile = invoiceinputfile;
+            this.linefile = lineinputfile;
+            rawinvoices = new List<Invoice>();// RRSDataInvoices();
+            rawlineitems=new List<LineItem>();
+        }
+        public void ReadInvoices()
+        {
+            // TODO: Set date value.
+            
+            OleDbConnection dbConn = new OleDbConnection(@"Provider=vfpoledb.1;Data Source="+invoicefile+";Collating Sequence=general");
+            try
+            {
+
+            // Initialize database connection.
+
+            dbConn.Open();
+
+                // Open connection.
+                OleDbCommand command= new OleDbCommand("select INVNO,NAME,ADD1,ADD2,CITY,STATE,ZIP,SNAME,SADD1,SADD2,SCITY,SSTATE,SZIP,WHEN_REQ,SUBTOTAL,SHIPVIA,ORDDATE from oehead.dbf",dbConn);
+                Invoice invoicetoadd;
+                OleDbDataReader reader= command.ExecuteReader();
+
+                while (reader.Read())
+                {
+
+                    if ((string)reader[2] != "                                   " || (string)reader[8] != "                                   ")
+                    {
+                        DateTime due = new DateTime();
+                        try
+                        {
+                        String duestring=(String)reader[13];
+                        duestring = duestring.Trim();
+                        String[] duearray = duestring.Split(' ');
+                        
+                        
+                            due = DateTime.Parse(duearray[0]);
+                        }
+                        catch { continue; }
+                        try{
+                        DateTime order = (DateTime)reader[16];
+                        int dueint = due.Year * 12 + due.Month;
+                        int orderint = order.Year * 12 + order.Month;
+                        if (!((dueint - orderint) > 2) && !((dueint - orderint) < -2))
+                        {
+                        if (!reader[15].ToString().Contains("WILL CALL"))
+                        {
+                            if ((string)reader[11].ToString().Trim() == "" || (string)reader[7].ToString().Substring(0, 4) == "SAME")
+                            {
+                                invoicetoadd = new Invoice(Int32.Parse((string)reader[0]), System.Decimal.Multiply((System.Decimal)reader[14],100), due, (string)reader[1], (string)reader[2], (string)reader[3], (string)reader[4], (string)reader[5], (string)reader[6], 0, 0, DateTime.Now.AddYears(1));
+
+                            }
+                            else
+                            {
+                                invoicetoadd = new Invoice(Int32.Parse((string)reader[0]), System.Decimal.Multiply((System.Decimal)reader[14],100), due, (string)reader[1], (string)reader[8], (string)reader[9], (string)reader[10], (string)reader[11], (string)reader[12], 0, 0, DateTime.Now.AddYears(1));
+
+                            }
+
+                            invoicetoadd.customername = invoicetoadd.customername.Trim();
+                            invoicetoadd.addr1 = invoicetoadd.addr1.Trim();
+                            invoicetoadd.addr2 = invoicetoadd.addr2.Trim();
+                            invoicetoadd.city = invoicetoadd.city.Trim();
+                            invoicetoadd.state = invoicetoadd.state.Trim();
+                            invoicetoadd.zip = invoicetoadd.zip.Trim();
+                            int i = Math.Abs(invoicetoadd.number);
+                            while (i >= 10)
+                                i /= 10;
+                            if(i!=8)
+                            {
+                            rawinvoices.Add(invoicetoadd);
+                            }
+                        }
+                    }else{
+                    }
+                    }
+                        catch{}
+                    }
+                    else
+                    {
+
+                    }
+                    
+                }
+            }
+            catch { }
+
+                // Close connection.
+                dbConn.Close();
+ 
+        }
+        public void ReadLineItems()
+        {
+            OleDbConnection dbConn = new OleDbConnection(@"Provider=vfpoledb.1;Data Source="+linefile+";Collating Sequence=general");
+            try
+            {
+                dbConn.Open();
+
+                // Open connection.
+                OleDbCommand command = new OleDbCommand("select INVNO,DESCRIPT,COST from oelines.dbf", dbConn);
+                LineItem lineitemtoadd;
+                OleDbDataReader reader= command.ExecuteReader();
+                while (reader.Read())
+                {
+                    lineitemtoadd = new LineItem(Int32.Parse((string)reader[0]), 0, (string)reader[1].ToString().Trim(), System.Decimal.Multiply((System.Decimal)reader[2],100));
+                    rawlineitems.Add(lineitemtoadd);
+                }
+                dbConn.Close();
+            }
+            catch
+            {
+            }
+        }
+        public List<LineItem> FilterLineItems(List<Invoice> invoices)
+        {
+            try
+            {
+                List<LineItem> filteredlineitems = new List<LineItem>();
+                for (int i = 0; i < invoices.Count; i++)
+                {
+                    int k = 1;
+                    for (int j = 0; j < rawlineitems.Count; j++)
+                    {
+                        if (invoices[i].number == rawlineitems[j].invoicenumber)
+                        {
+                            filteredlineitems.Add(new LineItem(rawlineitems[j].invoicenumber,k,rawlineitems[j].description,rawlineitems[j].value));
+                            k++;
+                        }
+                    }
+                }
+                return (filteredlineitems);
+            }
+            catch
+            {
+                return (null);
+            }
+        }
+       public List<Invoice> FilterInvoices(DateTime date,List<int> invoice)//do one or the other (default invoice)
+        {
+            try
+            {
+                List<Invoice> filteredinvoices = new List<Invoice>();
+                if (invoice != null)
+                {
+                    for (int j = 0; j < invoice.Count; j++)
+                    {
+                        for (int i = 0; i < rawinvoices.Count; i++)
+                        {
+                            if (rawinvoices[i].number==invoice[j])
+                            {
+                                filteredinvoices.Add(rawinvoices[i]);
+                            }
+                        }
+                    }
+                    return (filteredinvoices);
+                }else{
+                    for (int i = 0; i < rawinvoices.Count; i++)
+                    {
+                        if (rawinvoices[i].due.Day == date.Day && rawinvoices[i].due.Month == date.Month && rawinvoices[i].due.Year == date.Year)
+                        {
+                                filteredinvoices.Add(rawinvoices[i]);
+                        }
+                    }
+                    return (filteredinvoices);
+                }
+            }
+            catch
+            {
+                return null;
+            }
+        }
+        
+    }
+}

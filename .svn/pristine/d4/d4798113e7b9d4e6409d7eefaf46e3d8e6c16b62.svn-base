@@ -1,0 +1,280 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Text;
+using System.Windows.Forms;
+using System.Text.RegularExpressions;
+using Map;
+using System.IO;
+namespace RRS
+{
+    public partial class FindAddress : Form
+    {
+        
+        Invoice inputinvoice;
+        Invoice newinvoice;
+        Mapquest mapquest = new Mapquest(GlobalVar.sqlsettings.mapquestkey);
+        MySQL_Invoices mysql_invoices;
+        GeoData currentgeodata;
+        int caller;
+        DateTime viewdate;
+        DriverInfo driverinfo;
+        static BackgroundWorker _bw;
+        bool flag;
+
+        public void SetInvoice(Invoice invoice,int caller,DateTime date,DriverInfo driver,bool flag)
+        {
+            this.flag = flag;
+            inputinvoice = invoice;
+            this.caller = caller;
+            this.viewdate = date;
+            this.driverinfo = driver;
+            currentgeodata = new GeoData();
+        }
+        public FindAddress()
+        {
+            this.TopLevel = true;
+            
+            this.MaximizeBox = false;
+            
+            InitializeComponent();
+ 
+        }
+
+        private void button9_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Cancel_Click(object sender, EventArgs e)
+        {
+            this.Close();
+        }
+
+        private void Cancel_Click_1(object sender, EventArgs e)
+        {
+            try
+            {
+                newinvoice.addr1 = textStreet.Text;
+                newinvoice.addr2 = "";
+                newinvoice.city = textCity.Text;
+                newinvoice.state = textState.Text;
+                newinvoice.zip = textZip.Text;
+                newinvoice.latitude = currentgeodata.latitude[listAddresses.SelectedIndex];
+                newinvoice.longitude = currentgeodata.longitude[listAddresses.SelectedIndex];
+                mysql_invoices.UpdateInvoice(newinvoice, inputinvoice);
+                if (_bw != null)
+                {
+                    _bw.Dispose();
+                }
+
+            }
+            catch
+            {
+
+            }
+            if (caller == 0)
+            {
+
+
+
+                DeliverySchedule deliveryschedule = new DeliverySchedule();
+                deliveryschedule.SetDate(viewdate);
+                deliveryschedule.Show();
+                this.Close();
+            }
+            else if(caller==1)
+            {
+                ConfigureTruckRoute configureroute = new ConfigureTruckRoute();
+                configureroute.SetData(viewdate, driverinfo);
+                configureroute.Show();
+            }
+            else if (caller == 2)
+            {
+                EditInvoice editinvoice = new EditInvoice();
+                editinvoice.SetInvoice(inputinvoice, flag,viewdate,driverinfo);
+                editinvoice.Show();
+            }
+            this.Close();
+        }
+
+
+        private void EditInvoice_Load(object sender, EventArgs e)
+        {
+            try
+            {
+                textInvoice.Text = "";
+                textValue.Text = "";
+                textCustomer.Text = "";
+                textStreet.Text = "";
+                textCity.Text = "";
+                textZip.Text = "";
+                textState.Text = "";
+                listAddresses.Items.Clear();
+                listAddresses.Enabled = false;
+                toolStripStatusLabel1.Text = "";
+                mysql_invoices = new MySQL_Invoices(GlobalVar.sqlhost, GlobalVar.sqlport, GlobalVar.sqldatabase, GlobalVar.sqlusername, "");
+                
+                newinvoice = mysql_invoices.GetInvoice(inputinvoice.number);
+                if (newinvoice != null)
+                {
+                    
+                    textInvoice.Text = newinvoice.number.ToString();
+                    textValue.Text = DataFormat.FormatMoneyToString(newinvoice.value);
+                    if(newinvoice.addr1!="")
+                    {
+                    textStreet.Text = newinvoice.addr1;
+                    }
+                    else
+                    {
+                        textStreet.Text = newinvoice.addr2;
+                    }
+                    textCustomer.Text = newinvoice.customername;
+                    textCity.Text = newinvoice.city;
+                    textZip.Text = newinvoice.zip;
+                    textState.Text = newinvoice.state;
+
+                    
+                }
+                else { Cancel_Click(null, null); }
+            }
+            catch
+            {
+                Cancel_Click(null, null);
+            }
+        }
+
+        private void textValue_Leave(object sender, EventArgs e)
+        {
+            string pattern = @"^\$?\-?([1-9]{1}[0-9]{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\-?\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))$|^\(\$?([1-9]{1}\d{0,2}(\,\d{3})*(\.\d{0,2})?|[1-9]{1}\d{0,}(\.\d{0,2})?|0(\.\d{0,2})?|(\.\d{1,2}))\)$";
+
+            if (!Regex.IsMatch(textValue.Text, pattern))
+            {
+                textValue.Focus();
+
+
+                toolStripStatusLabel1.Text = "Value must be a U.S. dollar amount (dollar symbol is optional).";
+            }
+            else
+            {
+                toolStripStatusLabel1.Text = "";
+            }
+        }
+
+        private void textInvoice_Leave(object sender, EventArgs e)
+        {
+            string pattern = @"^[0-9]+$";
+            if (!Regex.IsMatch(textInvoice.Text, pattern))
+            {
+                textInvoice.Focus();
+                toolStripStatusLabel1.Text = "Invoice number must be a number.";
+            }
+            else
+            {
+                toolStripStatusLabel1.Text = "";
+            }
+        }
+        private void RefreshLocations()
+        {
+            try
+            {
+                listAddresses.Items.Clear();
+                if (currentgeodata!=null)
+                {
+                    listAddresses.Enabled = true;
+                    for (int i = 0; i < currentgeodata.street.Count; i++)
+                    {
+
+                        string address = "";
+                        address = address + "#"+(i + 1) + " - ";
+                        address = address + currentgeodata.street[i];
+                        address = address + ", " + currentgeodata.city[i];
+                        address = address + ", " + currentgeodata.state[i];
+                        address = address + ",  " + currentgeodata.zip[i];
+                        listAddresses.Items.Add(address);
+                    }
+                    listAddresses.SelectedIndex = 0;
+                }
+                else
+                {
+                    listAddresses.Enabled = false;
+                    listAddresses.Items.Add("No locations found.");
+                }
+            }
+            catch { }
+        }
+        private void FindLocation_Click(object sender, EventArgs e)
+        {
+            string address="";
+            address = address + textStreet.Text;
+            address = address + ", " + textCity.Text;
+            address = address + ", " + textState.Text;
+            address = address + ",  " + textZip.Text;
+            FindLocation.Enabled = false;
+            FindLocation.Text = "Searching...";
+
+            _bw = new BackgroundWorker
+            {
+                WorkerReportsProgress = true,
+                WorkerSupportsCancellation = true
+            };
+            _bw.DoWork += bw_DoWork;
+            _bw.ProgressChanged += bw_ProgressChanged;
+            _bw.RunWorkerCompleted += bw_RunWorkerCompleted;
+            _bw.RunWorkerAsync(address);
+        }
+        void bw_DoWork(object sender, DoWorkEventArgs e)
+        {
+            string address = (string)e.Argument;
+            _bw.ReportProgress(0);
+            currentgeodata=mapquest.GetLocation(address);
+            e.Result = currentgeodata;
+            
+        }
+        void bw_RunWorkerCompleted(object sender,
+                                   RunWorkerCompletedEventArgs e)
+        {
+            GeoData currentgeoddata=(GeoData)e.Result;
+            toolStripStatusLabel1.Text = "Search completed.";
+            FindLocation.Enabled = true;
+            FindLocation.Text = "Search for Addrress";
+            RefreshLocations();
+            Map.MapWriter mapwriter = new Map.MapWriter();
+            List<Double>[] latitude=new List<Double>[1];
+            List<Double>[] longitude=new List<Double>[1];
+            latitude[0] = new List<Double>();
+            longitude[0] = new List<Double>();
+            for(int i=0;i<currentgeodata.latitude.Count;i++)
+            {
+                latitude[0].Add(currentgeodata.latitude[i]);
+            longitude[0].Add(currentgeodata.longitude[i]);
+            }
+            mapwriter.WriteMap(1, null, null, null, latitude, longitude, null, 420, 668);
+                        string currentdirectory = Directory.GetCurrentDirectory();
+            currentdirectory = currentdirectory.Replace("\\", "/");
+            currentdirectory = Uri.EscapeUriString(currentdirectory);
+            string tovisit = "file:///" + currentdirectory + "/" + "map.html";
+            webkitBrowser1.Navigate(tovisit);
+        }
+        void bw_ProgressChanged(object sender,
+                                ProgressChangedEventArgs e)
+        {
+            int status = e.ProgressPercentage;
+            status = status + 1;
+            toolStripStatusLabel1.Text = "Searching for address...";
+        }
+        private void listAddresses_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            if (listAddresses.SelectedIndex >= 0)
+            {
+                int index=listAddresses.SelectedIndex;
+                textStreet.Text = currentgeodata.street[index];
+                textState.Text = currentgeodata.state[index];
+                textCity.Text = currentgeodata.city[index];
+                textZip.Text = currentgeodata.zip[index];
+            }
+        }
+    }
+}

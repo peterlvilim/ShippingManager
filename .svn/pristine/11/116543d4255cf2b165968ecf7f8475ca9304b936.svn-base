@@ -1,0 +1,50 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Windows.Forms;
+using System.IO;
+using System.Runtime.InteropServices;
+namespace RRS
+{
+    public static class GlobalVar
+    {
+        public static string sqlhost;
+        public static int sqlport;
+        public static string sqldatabase;
+        public static string sqlusername;
+        public static Settings sqlsettings;
+        public static bool authenticated;
+    }
+    static class Program
+    {
+       
+        //global vars (keep small)
+        
+        /// <summary>
+        /// The main entry point for the application.
+        /// </summary>
+        [STAThread]
+        static void Main()
+        {
+            try
+            {
+                GlobalVar.authenticated = false;
+                StreamReader sr = new StreamReader("RRS.conf");
+                GlobalVar.sqlhost = sr.ReadLine();
+                GlobalVar.sqlport = Int32.Parse(sr.ReadLine());
+                GlobalVar.sqldatabase = sr.ReadLine();
+                GlobalVar.sqlusername = sr.ReadLine();
+                sr.Close();
+            }
+            catch { MessageBox.Show("Unable to load configuration file RRS.conf"); return; }
+            MySQL_Settings mysql_settings= new MySQL_Settings(GlobalVar.sqlhost, GlobalVar.sqlport, GlobalVar.sqldatabase, GlobalVar.sqlusername, "");
+            GlobalVar.sqlsettings=mysql_settings.GetSettings(); 
+            
+            if (GlobalVar.sqlsettings == null) { MessageBox.Show("Unable to connect to SQL database."); return; }
+            
+            
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            Application.Run(new MainMenu());
+        }
+    }
+}

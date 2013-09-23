@@ -1,0 +1,52 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+using System.IO;
+
+namespace RRS
+{
+    public partial class Print : Form
+    {
+        DateTime viewdate;
+        public Print()
+        {
+            InitializeComponent();
+            this.TopLevel = true;
+            this.MinimizeBox = false;
+            this.MaximizeBox = false;
+            this.ControlBox = false;
+        }
+        public void SetDate(DateTime date)
+        {
+            viewdate = date;
+        }
+        private void Print_Load(object sender, EventArgs e)
+        {
+            string currentdirectory = Directory.GetCurrentDirectory();
+            currentdirectory = currentdirectory.Replace("\\", "/");
+            currentdirectory = Uri.EscapeUriString(currentdirectory);
+            string tovisit = "file:///" + currentdirectory + "/" + "toprint.html";
+            webBrowser1.Navigate(tovisit);
+            
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            
+            webBrowser1.ShowPrintDialog();
+        }
+
+        private void buttonBack_Click(object sender, EventArgs e)
+        {
+            DeliverySchedule deliveryschedule = new DeliverySchedule();
+            deliveryschedule.SetDate(viewdate);
+            deliveryschedule.Show();
+            this.Close();
+        }
+    }
+}

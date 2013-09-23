@@ -1,28 +1,55 @@
 ﻿
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RRS", "RRS\RRS.csproj", "{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}"
 EndProject
 Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "Setup1", "Setup1\Setup1.vdproj", "{F02CB10B-8155-4587-A5E6-D49BD84BC332}"
 EndProject
+Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "Setup", "Setup\Setup.isproj", "{05B46252-1A75-4D2E-B630-2635973724D8}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15} = {5DE00CF7-8D9F-4938-8CEF-49D04A097B15}
+	EndProjectSection
+EndProject
 Global
-	GlobalSection(SubversionScc) = preSolution
-		Svn-Managed = True
-		Manager = AnkhSVN - Subversion Support for Visual Studio
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		CD_ROM|x86 = CD_ROM|x86
 		Debug|x86 = Debug|x86
+		DVD-5|x86 = DVD-5|x86
 		Release|x86 = Release|x86
+		SingleImage|x86 = SingleImage|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.CD_ROM|x86.ActiveCfg = Release|x86
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.CD_ROM|x86.Build.0 = Release|x86
 		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.Debug|x86.ActiveCfg = Debug|x86
 		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.Debug|x86.Build.0 = Debug|x86
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.DVD-5|x86.ActiveCfg = Debug|x86
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.DVD-5|x86.Build.0 = Debug|x86
 		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.Release|x86.ActiveCfg = Release|x86
 		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.Release|x86.Build.0 = Release|x86
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.SingleImage|x86.ActiveCfg = Release|x86
+		{5DE00CF7-8D9F-4938-8CEF-49D04A097B15}.SingleImage|x86.Build.0 = Release|x86
+		{F02CB10B-8155-4587-A5E6-D49BD84BC332}.CD_ROM|x86.ActiveCfg = Release
 		{F02CB10B-8155-4587-A5E6-D49BD84BC332}.Debug|x86.ActiveCfg = Debug
+		{F02CB10B-8155-4587-A5E6-D49BD84BC332}.DVD-5|x86.ActiveCfg = Debug
 		{F02CB10B-8155-4587-A5E6-D49BD84BC332}.Release|x86.ActiveCfg = Release
+		{F02CB10B-8155-4587-A5E6-D49BD84BC332}.SingleImage|x86.ActiveCfg = Release
+		{05B46252-1A75-4D2E-B630-2635973724D8}.CD_ROM|x86.ActiveCfg = CD_ROM
+		{05B46252-1A75-4D2E-B630-2635973724D8}.CD_ROM|x86.Build.0 = CD_ROM
+		{05B46252-1A75-4D2E-B630-2635973724D8}.Debug|x86.ActiveCfg = DVD-5
+		{05B46252-1A75-4D2E-B630-2635973724D8}.Debug|x86.Build.0 = DVD-5
+		{05B46252-1A75-4D2E-B630-2635973724D8}.DVD-5|x86.ActiveCfg = DVD-5
+		{05B46252-1A75-4D2E-B630-2635973724D8}.DVD-5|x86.Build.0 = DVD-5
+		{05B46252-1A75-4D2E-B630-2635973724D8}.Release|x86.ActiveCfg = SingleImage
+		{05B46252-1A75-4D2E-B630-2635973724D8}.Release|x86.Build.0 = SingleImage
+		{05B46252-1A75-4D2E-B630-2635973724D8}.SingleImage|x86.ActiveCfg = SingleImage
+		{05B46252-1A75-4D2E-B630-2635973724D8}.SingleImage|x86.Build.0 = SingleImage
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(SubversionScc) = preSolution
+		Svn-Managed = True
+		Manager = AnkhSVN - Subversion Support for Visual Studio
 	EndGlobalSection
 EndGlobal

@@ -1,0 +1,60 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Windows.Forms;
+
+namespace RRS
+{
+    public partial class Authenticate : Form
+    {
+        MySQL_Settings mysql_settings = new MySQL_Settings(GlobalVar.sqlhost, GlobalVar.sqlport, GlobalVar.sqldatabase, GlobalVar.sqlusername, "");
+        public Authenticate()
+        {
+            InitializeComponent();
+            textPassword.UseSystemPasswordChar = true;
+            toolStripLabel1.Text = "";
+            
+            this.MaximizeBox = false;
+            
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            try{
+                string password = textPassword.Text;
+                string passwordhash=DataFormat.GetSha1(password);
+                Settings settings=mysql_settings.GetSettings();
+                
+                if (passwordhash == settings.passwordhash)
+                {
+                    GlobalVar.authenticated = true;
+                    Application.OpenForms[0].Controls[0].Enabled = true;
+                    Application.OpenForms[0].Controls[1].Enabled = true;
+                    Application.OpenForms[0].Controls[2].Enabled = true;
+                    Application.OpenForms[0].Controls[0].Text = "Change Settings";
+                    Application.OpenForms[0].Controls[3].Enabled = true;
+                    this.Close();
+                }
+                else
+                {
+                    toolStripLabel1.Text = "Authentication failed.";
+                }
+            }catch{
+                toolStripLabel1.Text="Authentication failed.";
+            }
+        }
+
+        private void buttonCancel_Click(object sender, EventArgs e)
+        {
+            Application.OpenForms[0].Controls[0].Enabled = true;
+            Application.OpenForms[0].Controls[1].Enabled = true;
+            Application.OpenForms[0].Controls[2].Enabled = true;
+            Application.OpenForms[0].Controls[3].Enabled = true;
+            this.Close();
+        }
+    }
+}
