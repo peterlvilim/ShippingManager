@@ -1,0 +1,809 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Data;
+using MySql.Data.MySqlClient;
+using System.Text.RegularExpressions;
+using System.IO;
+namespace RRS
+{
+    public class MySQL
+    {
+        string host;//localhost
+        int port;//3306
+        string database;//RRS
+        string user;//root
+        string password;//da39a3ee5e6b4b0d3255bfef95601890afd80709
+        MySqlConnection connection;
+        public MySQL(string host, int port,string database, string user, string password)
+        {
+            this.host=host;
+            this.port=port;
+            this.database=database;
+            this.user=user;
+            this.password=password;
+            connection = null;
+        }
+        public MySqlConnection Connect()
+        {
+            try
+                {
+            string connStr = "Server="+GlobalVar.sqlhost+";Uid="+GlobalVar.sqlusername+";Pwd=;Database="+GlobalVar.sqldatabase+";";
+            connection = new MySqlConnection(connStr);
+            connection.Open();
+            return connection;
+            }
+                catch{
+                    return null;
+                }
+        }
+        public bool Disconnect()
+        {
+            try
+            {
+                if (connection != null)
+                {
+                    connection.Close();
+                    connection = null;
+                }
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+        public MySqlDataReader Select(string command,MySqlConnection connection)
+        {
+
+            MySqlCommand cmd = new MySqlCommand(command, connection);
+            MySqlDataReader rdr = cmd.ExecuteReader();
+            return rdr;
+        }
+        public bool Insert(string command,MySqlConnection connection)
+        {
+            try
+            {
+
+                MySqlCommand myCommand = new MySqlCommand(command);
+                myCommand.Connection = connection;
+                myCommand.ExecuteNonQuery();
+                
+                return true;
+            }catch{
+                return (false);
+            }
+        }
+        public bool Update(string command, MySqlConnection connection)
+        {
+
+            try
+            {
+                MySqlCommand myCommand = new MySqlCommand(command);
+                myCommand.Connection = connection;
+                myCommand.ExecuteNonQuery();
+
+                return true;
+            }
+            catch
+            {
+                return (false);
+            }
+        }
+        public bool Delete(string command, MySqlConnection connection)
+        {
+
+            try
+            {
+                MySqlCommand myCommand = new MySqlCommand(command);
+                myCommand.Connection = connection;
+                myCommand.ExecuteNonQuery();
+               
+                return true;
+            }
+            catch
+            {
+                return (false);
+            }
+        }
+    }
+    
+    //handle invoices
+    public class MySQL_Invoices : MySQL
+    {
+        public MySQL_Invoices(string host, int port, string database, string user, string password)
+            : base(host,port,database,user,password)
+        {
+        }
+
+            public List<Invoice> GetInvoices(DateTime date)
+            {
+                StreamWriter sw=new StreamWriter("test.txt");
+                sw.WriteLine("test"); 
+                List<Invoice> invoices = new List<Invoice>();
+                
+                try
+                {
+                    
+                    MySqlConnection theconnection = Connect();
+                    List<DriverInfo> drivers = new List<DriverInfo>();
+                    string selectquery = "SELECT * FROM INVOICE_DATA WHERE inv_due_date LIKE '%" + date.ToShortDateString() + "%' OR inv_due_date LIKE '%" + date.ToString("M/d/yy") + "%' OR inv_due_date LIKE '%" + date.ToString("M/d/yyyy") + "%' OR inv_due_date LIKE '%" + date.ToString("MM/d/yy") + "%';";
+                    MySqlDataReader rdr = Select(selectquery, theconnection);
+                    sw.WriteLine(selectquery);
+                    while (rdr.Read())
+                    {
+                        
+                        Invoice toinsert = new Invoice((int)rdr[0], (int)rdr[1], DateTime.Parse((string)rdr[2]), (string)rdr[3], (string)rdr[4], (string)rdr[5], (string)rdr[6], (string)rdr[7], (string)rdr[8], (double)rdr[9], (double)rdr[10], DateTime.Parse((string)rdr[11]));
+                        sw.WriteLine((string)rdr[3]); 
+                        invoices.Add(toinsert);
+                    }
+                    
+                }
+                catch { sw.WriteLine("test2"); }
+                sw.WriteLine("test4");
+                sw.Close();
+                Disconnect();
+                return (invoices);
+            }
+            public Invoice GetInvoice(int number)
+            {
+                
+                try
+                {
+
+                    MySqlConnection theconnection = Connect();
+                    List<DriverInfo> drivers = new List<DriverInfo>();
+                    MySqlDataReader rdr = Select("SELECT * FROM INVOICE_DATA WHERE inv_number=" + number + ";", theconnection);
+                    rdr.Read();
+                        Invoice toreturn = new Invoice((int)rdr[0], (int)rdr[1], DateTime.Parse((string)rdr[2]), (string)rdr[3], (string)rdr[4], (string)rdr[5], (string)rdr[6], (string)rdr[7], (string)rdr[8], (double)rdr[9], (double)rdr[10], DateTime.Parse((string)rdr[11]));
+                        Disconnect();
+                    
+                                return (toreturn);
+                }
+                catch {
+                    Disconnect();
+                    return (null); }
+
+            }
+            public void BlockInvoice(Invoice invoice)
+            {
+                try
+                {
+                    MySqlConnection theconnection = Connect();
+                    string blockquery = "INSERT INTO invoice_block (`INV_NUMBER`,`INV_DUE_DATE`) VALUES("+invoice.number+",'"+invoice.due+"');";
+                    Insert(blockquery, theconnection);
+                        Disconnect();
+                }
+                catch { Disconnect(); }
+
+            }
+            public List<Invoice> GetBlocks(DateTime date)
+            {
+                try
+                {
+                    List<Invoice> invoices = new List<Invoice>();
+                    MySqlConnection theconnection = Connect();
+                    string getblockquery = "SELECT * FROM invoice_block WHERE inv_due_date LIKE '%" + date.ToShortDateString() + "%' OR inv_due_date LIKE '%" + date.ToString("M/d/yy") + "%' OR inv_due_date LIKE '%" + date.ToString("M/d/yyyy") + "%' OR inv_due_date LIKE '%" + date.ToString("MM/d/yy") + "%';";
+                    MySqlDataReader rdr = Select(getblockquery, theconnection);
+                    while (rdr.Read())
+                    {
+                        Invoice toinsert = new Invoice((int)rdr[0], 0,DateTime.Parse((string)rdr[1]), "", "", "", "", "", "", 0, 0, DateTime.Parse((string)rdr[1]));
+                        invoices.Add(toinsert);
+                    }
+                    Disconnect();
+                    return (invoices);
+                }
+                catch { Disconnect();
+                return null;
+                }
+
+            }
+        public List<Invoice> AddInvoices(List<Invoice> invoices,bool safe)
+        {
+            try{
+            MySqlConnection theconnection = Connect();
+            //figure out if already in database
+                if(safe==true)
+                {
+                    List<Invoice> totest=GetInvoices(invoices[0].due);
+
+                    for (int j = 0; j < totest.Count; j++)
+                    {
+                        for (int i = 0; i < invoices.Count; i++)
+                        {
+                            if (totest[j].number == invoices[i].number)
+                            {
+                                invoices.RemoveAt(i);
+                            }
+                        }
+                    }
+                }
+            for (int i = 0; i < invoices.Count; i++)
+            {
+                invoices[i].customername=invoices[i].customername.Replace("\'","\\'");
+                invoices[i].customername=invoices[i].customername.Replace("\"", "\\\"");
+                string insertquery = "INSERT INTO invoice_data (`INV_NUMBER`, `INV_SALES_AMOUNT`, `INV_DUE_DATE`, `INV_CUSTOMER_NAME`, `INV_ADDR_LN1`,`INV_ADDR_LN2`, `INV_CITY`, `INV_STATE`, `INV_ZIP`, `INV_LATITUDE`, `INV_LONGITUDE`, `INV_DELIVERED_DATE`) VALUES (" + invoices[i].number + ", " + invoices[i].value + ",'" + invoices[i].due.ToShortDateString() + "','" +invoices[i].customername + "','" + invoices[i].addr1 + "','" + invoices[i].addr2 + "','" + invoices[i].city + "','" + invoices[i].state + "','" + invoices[i].zip + "'," + invoices[i].latitude + "," + invoices[i].longitude + ",'" + invoices[i].delivered.ToShortDateString() + "');";
+                Insert(insertquery, theconnection);
+                Disconnect();
+
+            }
+            Disconnect();
+            return invoices;
+
+            }catch{
+                Disconnect();
+            return null;
+            }
+
+        }
+        public bool DeleteInvoice(Invoice invoice)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string deletequery="DELETE FROM invoice_data WHERE INV_NUMBER="+invoice.number+";";
+                Delete(deletequery,theconnection);
+                Disconnect();
+                return (false);
+            }
+            catch
+            {
+                Disconnect();
+                    return(false);
+            }
+        }
+        public bool UpdateInvoice(Invoice invoice,Invoice originalinvoice)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                invoice.customername = invoice.customername.Replace("\'", "\\'");
+                invoice.customername = invoice.customername.Replace("\"", "\\\"");
+                string updatequery = "UPDATE invoice_data SET `INV_NUMBER`=" + invoice.number + ", `INV_SALES_AMOUNT`=" + invoice.value + ", `INV_DUE_DATE`='" + invoice.due.ToShortDateString() + "', `INV_CUSTOMER_NAME`='" + invoice.customername + "', `INV_ADDR_LN1`='" + invoice.addr1 + "',`INV_ADDR_LN2`='" + invoice.addr2 + "', `INV_CITY`='" + invoice.city + "', `INV_STATE`='" + invoice.state + "', `INV_ZIP`='" + invoice.zip + "', `INV_LATITUDE`=" + invoice.latitude + ", `INV_LONGITUDE`=" + invoice.longitude + ", `INV_DELIVERED_DATE`='" + invoice.delivered.ToShortDateString() + "' WHERE `INV_NUMBER`="+originalinvoice.number+";";
+                Update(updatequery, theconnection);
+                //do line items
+                updatequery = "UPDATE invoice_line_data SET `INL_INV_NUMBER`=" + invoice.number + " WHERE `INL_INV_NUMBER`=" + originalinvoice.number + ";";
+                Update(updatequery, theconnection);
+                Disconnect();
+                return (true);
+            }
+            catch
+            {
+                Disconnect();
+                return (false);
+            }
+        }
+        public bool UpdateInvoices(List<Invoice> invoices,DateTime date, bool dodelete)
+        {
+            try
+            {
+                bool flag = false;
+                MySqlConnection theconnection = Connect();
+                List<Invoice> originalinvoices = GetInvoices(date);
+                //update
+                for (int j = 0; j < invoices.Count; j++)
+                {
+                    flag = false;
+                    for (int i = 0; i < originalinvoices.Count; i++)
+                    {
+
+                        if (originalinvoices[i].number == invoices[j].number)
+                        {
+                            invoices[j].customername = invoices[j].customername.Replace("'", "");
+
+                            string updatequery = "UPDATE invoice_data SET `INV_NUMBER`=" + invoices[j].number + ", `INV_SALES_AMOUNT`=" + invoices[j].value + ", `INV_DUE_DATE`='" + invoices[j].due.ToShortDateString() + "', `INV_CUSTOMER_NAME`='" + invoices[j].customername + "', `INV_ADDR_LN1`='" + invoices[j].addr1 + "',`INV_ADDR_LN2`='" + invoices[j].addr2 + "', `INV_CITY`='" + invoices[j].city + "', `INV_STATE`='" + invoices[j].state + "', `INV_ZIP`='" + invoices[j].zip + "', `INV_DELIVERED_DATE`='" + invoices[j].delivered.ToShortDateString() + "', `INV_LONGITUDE`=0,`INV_LATITUDE`=0 WHERE `INV_NUMBER`=" + invoices[j].number + ";";
+                            Update(updatequery, theconnection);
+                            flag = true;
+                            originalinvoices.RemoveAt(i);
+                            i = originalinvoices.Count;
+                        }
+                        if (flag == true)
+                        {
+                           
+                        }
+                    }
+                    
+                    
+                }
+                //clean up the rest
+                for (int i = 0; i < originalinvoices.Count; i++)
+                {
+                    string deletequery = "DELETE FROM invoice_data WHERE `INV_NUMBER`=" + originalinvoices[i].number + ";";
+                    Delete(deletequery, theconnection);
+                }
+                    
+                    Disconnect();
+                return (true);
+            }
+            catch
+            {
+                Disconnect();
+                return (false);
+            }
+        }
+    }
+    //handle line items
+    public class MySQL_LineItems : MySQL
+    {
+        public MySQL_LineItems(string host, int port, string database, string user, string password)
+            : base(host, port, database, user, password)
+        {
+        }
+        public List<LineItem> GetLineItems(Invoice invoice)
+        {
+            List<LineItem> lineitems = new List<LineItem>();
+
+            try
+            {
+
+                MySqlConnection theconnection = Connect();
+                List<DriverInfo> drivers = new List<DriverInfo>();
+                MySqlDataReader rdr = Select("SELECT * FROM invoice_line_data WHERE inl_inv_number='" + invoice.number+ "';", theconnection);
+                while (rdr.Read())
+                {
+                    LineItem toinsert = new LineItem((int)rdr[0],(int)rdr[1],(string)rdr[2],(int)rdr[3]);
+                    lineitems.Add(toinsert);
+                }
+                Disconnect();
+                return (lineitems);
+            }
+            catch {
+                Disconnect();
+                return (null); }
+            
+        }
+        public bool AddLineItems(List<LineItem> lineitems)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                for (int i = 0; i < lineitems.Count; i++)
+                {
+                    string cleaned = lineitems[i].description.Replace("'", "");
+                    //cleaned = cleaned.Replace("\"", "\\\"");
+                    string insertquery = "INSERT INTO invoice_line_data (`INL_INV_NUMBER`,`INL_NUMBER`,`INL_LINE_DESC`,`INL_LINE_SALE_AMT`) VALUES(" + lineitems[i].invoicenumber + "," + lineitems[i].lineitemnumber + ",'" + cleaned + "'," + lineitems[i].value + ");";
+                    Insert(insertquery, theconnection);
+                }
+                Disconnect();
+                return true;
+            }
+            catch {
+                Disconnect();
+                return false; }
+        }
+    
+    }
+
+    //handle routes
+    public class MySQL_Routes : MySQL
+    {
+        public MySQL_Routes(string host, int port, string database, string user, string password)
+            : base(host, port, database, user, password)
+        {
+        }
+        public bool AddRouteInfo(RouteInfo routeinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string insertquery = "INSERT INTO delivery_route_data (`DR_DATE`, `DR_DRV_NUMBER`, `DR_ROUTE_NUMBER`,DR_MILES) VALUES ('" + routeinfo.date + "', " + routeinfo.drivernumber + ", NULL,"+routeinfo.miles+");";
+                Insert(insertquery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+        }
+        public List<RouteInfo> GetRouteInfo(DateTime date)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                List<RouteInfo> routeinfo = new List<RouteInfo>();
+                string selectquery = "SELECT * FROM delivery_route_data WHERE DR_DATE LIKE '%" + date.ToShortDateString() + "%' OR DR_DATE LIKE '%" + date.ToString("M/d/yy") + "%' OR DR_DATE LIKE '%" + date.ToString("M/d/yyyy") + "%' OR DR_DATE LIKE '%" + date.ToString("MM/d/yy") + "%';";
+                MySqlDataReader rdr = Select(selectquery, theconnection);
+                while (rdr.Read())
+                {
+                    RouteInfo toinsert = new RouteInfo((int)rdr[2], DateTime.Parse((String)rdr[0]), (int)rdr[1],(int)rdr[3]);
+                    routeinfo.Add(toinsert);
+                }
+                Disconnect();
+                return (routeinfo);
+            }
+            catch
+            {
+                Disconnect();
+                return null;
+            }
+        }
+        public List<RouteInfo> GetRouteInfo(int ID)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                List<RouteInfo> routeinfo = new List<RouteInfo>();
+                MySqlDataReader rdr = Select("SELECT * FROM delivery_route_data WHERE DR_DRV_NUMBER=" + ID.ToString() + " ;", theconnection);
+                while (rdr.Read())
+                {
+                    RouteInfo toinsert = new RouteInfo((int)rdr[2], DateTime.Parse((String)rdr[0]),(int)rdr[1], (int)rdr[3]);
+                    routeinfo.Add(toinsert);
+                }
+                Disconnect();
+                return (routeinfo);
+            }
+            catch
+            {
+                Disconnect();
+                return null;
+            }
+        }
+        public RouteInfo GetRouteInfo(InvoiceRouteInfo invoicerouteinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+
+                MySqlDataReader rdr = Select("SELECT * FROM delivery_route_data WHERE DR_ROUTE_NUMBER=" + invoicerouteinfo.routenumber.ToString() + " ;", theconnection);
+                rdr.Read();
+                    RouteInfo toinsert = new RouteInfo((int)rdr[2], DateTime.Parse((String)rdr[0]), (int)rdr[1], (int)rdr[3]);
+                    
+                
+                Disconnect();
+                return (toinsert);
+            }
+            catch
+            {
+                Disconnect();
+                return null;
+            }
+        }
+        public bool DeleteRouteInfo(int ID,DateTime date)
+        {
+            try
+            {
+                List<RouteInfo> routes=GetRouteInfo(date);
+                RouteInfo theroute = null;
+                for (int i = 0; i < routes.Count; i++)
+                {
+                    if (routes[i].date == date && routes[i].drivernumber == ID)
+                    {
+                        theroute = routes[i];
+                    }
+                }
+                MySqlConnection theconnection = Connect();
+                string deletequery = "";
+
+                    deletequery = "DELETE FROM delivery_route_data WHERE DR_DRV_NUMBER=" + ID.ToString() + " AND DR_DATE='" + date + "';";
+
+                    deletequery = "DELETE FROM delivery_route_data WHERE DR_DRV_NUMBER=" + ID.ToString() + ";";
+                
+                Delete(deletequery, theconnection);
+                deletequery = "DELETE FROM invoice_route_data WHERE IR_ROUTE_NUMBER=" + theroute.number+";";
+                Delete(deletequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+
+        }
+        public bool updateMileage(RouteInfo routeinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string updatequery = "UPDATE delivery_route_data SET `DR_MILES`=" + routeinfo.miles + " WHERE DR_ROUTE_NUMBER="+routeinfo.number+";";
+                Update(updatequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+
+                Disconnect();
+                return false;
+            }
+        }
+        public bool updateDriver(RouteInfo routeinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string updatequery = "UPDATE delivery_route_data SET `DR_DRV_NUMBER`=" + routeinfo.drivernumber + " WHERE DR_ROUTE_NUMBER=" + routeinfo.number + ";";
+                Update(updatequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+
+                Disconnect();
+                return false;
+            }
+        }
+        public bool DeleteRouteInfo(int routeid)
+        {
+            try
+            {
+                
+                MySqlConnection theconnection = Connect();
+
+                    string deletequery = "DELETE FROM delivery_route_data WHERE DR_ROUTE_NUMBER=" + routeid.ToString() + ";";
+
+                    
+                Delete(deletequery, theconnection);
+                deletequery = "DELETE FROM invoice_route_data WHERE IR_ROUTE_NUMBER=" + routeid + ";";
+                Delete(deletequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+
+        }
+    }
+    //handle invoice route data
+    public class MySQL_InvoiceRoute : MySQL
+    {
+        public MySQL_InvoiceRoute(string host, int port, string database, string user, string password)
+            : base(host, port, database, user, password)
+        {
+        }
+        public bool AddRouteInfo(InvoiceRouteInfo routeinfo)
+        {
+            try
+            {
+                
+                MySqlConnection theconnection = Connect();
+                DeleteRouteInfo(routeinfo, false);
+                string insertquery = "INSERT INTO invoice_route_data (`IR_INV_NUMBER`, `IR_ROUTE_NUMBER`, `IR_ROUTE_STOP`) VALUES (" + routeinfo.invoicenumber + ", " + routeinfo.routenumber + ", "+routeinfo.stop+");";
+                Insert(insertquery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+        }
+        public List<InvoiceRouteInfo> GetRouteInfo(RouteInfo route)
+        {
+            try
+            {
+                MySqlConnection theconnection=Connect();
+
+                MySqlDataReader rdr = Select("SELECT * FROM invoice_route_data WHERE IR_ROUTE_NUMBER=" + route.number + " ;", theconnection);
+                List<InvoiceRouteInfo> routeinfo= new List<InvoiceRouteInfo>();
+                while (rdr.Read())
+                {
+                    InvoiceRouteInfo input = new InvoiceRouteInfo((int)rdr[0], (int)rdr[1], (int)rdr[2]);
+                    routeinfo.Add(input);
+                }
+                        Disconnect();
+
+                return (routeinfo);
+            }
+            catch
+            {
+                
+                Disconnect();
+                return null;
+            }
+        }
+        public InvoiceRouteInfo GetRouteInfo(int ID)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+
+                MySqlDataReader rdr = Select("SELECT * FROM invoice_route_data WHERE IR_INV_NUMBER=" + ID+ " ;", theconnection);
+                rdr.Read();
+
+                    InvoiceRouteInfo input = new InvoiceRouteInfo((int)rdr[0], (int)rdr[1], (int)rdr[2]);
+
+                Disconnect();
+
+                return (input);
+            }
+            catch
+            {
+
+                Disconnect();
+                return null;
+            }
+        }
+
+
+        public bool DeleteRouteInfo(InvoiceRouteInfo routeinfo, bool flag)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string deletequery = "DELETE FROM invoice_route_data WHERE IR_INV_NUMBER=" + routeinfo.invoicenumber.ToString() +";";
+                Delete(deletequery, theconnection);
+                //UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`-1 WHERE `IR_ROUTE_NUMBER`=29 AND `IR_ROUTE_STOP`>-3;
+                if (flag == true)
+                {
+                    string updatequery = "UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`-1 WHERE `IR_ROUTE_NUMBER`=" + routeinfo.routenumber + " AND `IR_ROUTE_STOP`>" + routeinfo.stop + ";";
+                    Update(updatequery, theconnection);
+                }
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+                Disconnect();
+                return false;
+            }
+        }
+        public bool MoveUp(InvoiceRouteInfo routeinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string updatequery = "UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`+1 WHERE `IR_ROUTE_NUMBER`=" + routeinfo.routenumber + " AND `IR_ROUTE_STOP`=" + (routeinfo.stop-1)+ ";";
+                Update(updatequery, theconnection);
+                updatequery = "UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`-1 WHERE `IR_ROUTE_NUMBER`=" + routeinfo.routenumber + " AND `IR_INV_NUMBER`=" + routeinfo.invoicenumber+ ";";
+                Update(updatequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+
+                Disconnect();
+                return false;
+            }
+        }
+        public bool MoveDown(InvoiceRouteInfo routeinfo)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                string updatequery = "UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`-1 WHERE `IR_ROUTE_NUMBER`=" + routeinfo.routenumber + " AND `IR_ROUTE_STOP`=" + (routeinfo.stop + 1) + ";";
+                Update(updatequery, theconnection);
+                updatequery = "UPDATE invoice_route_data SET `IR_ROUTE_STOP`=`IR_ROUTE_STOP`+1 WHERE `IR_ROUTE_NUMBER`=" + routeinfo.routenumber + " AND `IR_INV_NUMBER`=" + routeinfo.invoicenumber + ";";
+                Update(updatequery, theconnection);
+                Disconnect();
+                return true;
+            }
+            catch
+            {
+
+                Disconnect();
+                return false;
+            }
+        }
+    }
+    //handle drivers
+    public class MySQL_Drivers : MySQL
+    {
+        public MySQL_Drivers(string host, int port, string database, string user, string password)
+            : base(host,port,database,user,password)
+        {
+        }
+        public List <DriverInfo>GetDrivers()
+        {
+            try{
+                MySqlConnection theconnection=Connect();
+                List<DriverInfo> drivers = new List<DriverInfo>();
+                MySqlDataReader rdr=Select("SELECT * FROM drivers;", theconnection);
+                while (rdr.Read())
+                {
+                    DriverInfo driverinfo = new DriverInfo((int)rdr[0], (string)rdr[1], (bool)rdr[2], (bool)rdr[3], (int)rdr[4], (int)rdr[5], (int)rdr[6], (int)rdr[7],(string)rdr[8]);
+                    drivers.Add(driverinfo);
+                }
+                Disconnect();
+                return (drivers);
+            }catch{
+                Disconnect();
+            return null;
+            }
+
+        }
+        public DriverInfo GetDriverInfo(int ID)
+        {
+            try
+            {
+                MySqlConnection theconnection = Connect();
+                
+                MySqlDataReader rdr = Select("SELECT * FROM drivers WHERE DRV_NUMBER="+ID.ToString()+";", theconnection);
+                rdr.Read();
+                    DriverInfo driverinfo = new DriverInfo((int)rdr[0], (string)rdr[1], (bool)rdr[2], (bool)rdr[3], (int)rdr[4], (int)rdr[5], (int)rdr[6], (int)rdr[7],(string)rdr[8]);
+
+              
+                Disconnect();
+                return (driverinfo);
+            }
+            catch
+            {
+                Disconnect();
+                return null;
+            }
+        }
+        public bool DeleteDriver(int ID)
+        {
+            MySqlConnection theconnection = Connect();
+            string deletequery = "DELETE FROM drivers WHERE DRV_NUMBER="+ID+";";
+            Delete(deletequery, theconnection);
+            Disconnect();
+            return true;
+        }
+        public bool UpdateDriverInfo(DriverInfo drivertoupdate)
+        {
+            MySqlConnection theconnection = Connect();
+            int flag1 = 0;
+            int flag2 = 0;
+            if (drivertoupdate.flat == true) { flag1 = 1; }
+            if (drivertoupdate.trailer == true) { flag2 = 1; }
+            string updatequery = "UPDATE drivers SET `DRV_NUMBER`=" + drivertoupdate.number.ToString() + ", `DRV_NAME`='"+drivertoupdate.name+"', `DRV_FLAT`="+flag1+", `DRV_TRAILER`="+flag2+", `DRV_HOUR_RATE`="+drivertoupdate.hour_rate+",`DRV_OVERTIME`="+drivertoupdate.overtime_rate+", `DRV_FUEL_SURCH`="+drivertoupdate.fuel_surch+", `DRV_MAINT_SURCH`="+drivertoupdate.maint_surch+", `DRV_NOTES`='"+drivertoupdate.notes+"' WHERE DRV_NUMBER="+drivertoupdate.number+";";
+            Update(updatequery, theconnection);
+            Disconnect();
+            return true;
+        }
+        public bool AddDriverInfo(DriverInfo drivertoadd)
+        {
+            MySqlConnection theconnection = Connect();
+            int flag1 = 0;
+            int flag2 = 0;
+            if (drivertoadd.flat == true) { flag1 = 1; }
+            if (drivertoadd.trailer == true) { flag2 = 1; }
+            string insertquery = "INSERT INTO drivers (`DRV_NUMBER`, `DRV_NAME`, `DRV_FLAT`, `DRV_TRAILER`, `DRV_HOUR_RATE`,`DRV_OVERTIME`, `DRV_FUEL_SURCH`, `DRV_MAINT_SURCH`, `DRV_NOTES`) VALUES (NULL, '"+drivertoadd.name+"', '"+flag1+"', '"+flag2+"', '"+drivertoadd.hour_rate+"','"+drivertoadd.overtime_rate+"', '"+drivertoadd.fuel_surch+"', '"+drivertoadd.maint_surch+"', '"+drivertoadd.notes+"');";
+            Insert(insertquery,theconnection);
+            Disconnect();
+            return true;
+        }
+
+    }
+    public class MySQL_Settings : MySQL
+    {
+        public MySQL_Settings(string host, int port, string database, string user, string password)
+            : base(host, port, database, user, password)
+        {}
+            public Settings GetSettings()
+            {
+                try{
+                    
+                MySqlConnection theconnection=Connect();
+                MySqlDataReader rdr = Select("SELECT * FROM settings;", theconnection);
+                rdr.Read();
+                Settings settings= new Settings((string)rdr[0],(float)rdr[1],(float)rdr[2],(string)rdr[3],(string)rdr[4],(string)rdr[5],(string)rdr[6]);
+                
+                Disconnect();
+                return (settings);
+
+                }
+                catch { Disconnect(); return null; }
+            }
+            public bool UpdateSettings(Settings settings)
+            {
+                try
+                {
+
+                    MySqlConnection theconnection = Connect();
+                    settings.RRSaddress = settings.RRSaddress.Replace("'", "");
+                    settings.RRSHeaderFile=settings.RRSHeaderFile.Replace("\\","\\\\");
+                    settings.RRSLinesFile= settings.RRSLinesFile.Replace("\\", "\\\\");
+                    string updatequery="UPDATE settings SET `RRSaddress`='"+settings.RRSaddress+"',`RRSlatitude`="+settings.RRSlatitude+",`RRSlongitude`="+settings.RRSlongitude+",`Mapquest`='"+settings.mapquestkey+"',`RRSLinesFile`='"+settings.RRSLinesFile+"',`RRSHeaderFile`='"+settings.RRSHeaderFile+"',`password`='"+settings.passwordhash+"';";
+                    Update(updatequery, theconnection);
+                    
+                    Disconnect();
+                    return true;
+
+                }
+                catch { Disconnect(); return false; }
+            }
+        
+    }
+}
