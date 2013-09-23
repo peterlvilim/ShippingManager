@@ -1,0 +1,1 @@
+vrp_rtr.exe -f explicit_full2.vrp -D 50 -L 5 -N 30 -h ONE_POINT_MOVE -h TWO_OPT -h THREE_OPT -v -out Test_inst2.sol

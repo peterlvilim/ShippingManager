@@ -1,0 +1,15 @@
+<html>
+<head>
+<script src="http://open.mapquestapi.com/sdk/js/v7.0.s/mqa.toolkit.js"></script>
+<script type="text/javascript">
+MQA.EventUtil.observe(window, 'load', function() {
+window.map = new MQA.TileMap(document.getElementById('map'),1,{lat:41.878114, lng:-87.629798},'map');
+MQA.withModule('largezoom', function() {
+ map.addControl(new MQA.LargeZoom(), new MQA.MapCornerPlacement(MQA.MapCorner.TOP_LEFT, new MQA.Size(5,5)));
+});
+map.bestFit()
+});
+</script>
+</head>
+<body bgcolor="F0F0F0"><div id='map' style='width:420px; height:668px;'></div></body>
+</html>
