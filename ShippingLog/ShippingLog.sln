@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 2012
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ShippingLog", "ShippingLog\ShippingLog.csproj", "{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "hourLogger", "hourLogger\hourLogger.csproj", "{8D07569D-3156-4432-A6FE-39020B7AB3A5}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "DriverLogSetup", "DriverLogSetup\DriverLogSetup.vdproj", "{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}"
+EndProject
+Project("{6141683F-8A12-4E36-9623-2EB02B2C2303}") = "Setup2", "Setup2\Setup2.isproj", "{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		CD_ROM|x86 = CD_ROM|x86
+		Debug|x86 = Debug|x86
+		DVD-5|x86 = DVD-5|x86
+		Release|x86 = Release|x86
+		SingleImage|x86 = SingleImage|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.CD_ROM|x86.ActiveCfg = Release|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.CD_ROM|x86.Build.0 = Release|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.Debug|x86.ActiveCfg = Debug|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.Debug|x86.Build.0 = Debug|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.DVD-5|x86.ActiveCfg = Debug|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.DVD-5|x86.Build.0 = Debug|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.Release|x86.ActiveCfg = Release|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.Release|x86.Build.0 = Release|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.SingleImage|x86.ActiveCfg = Release|x86
+		{F171183E-E2B6-4E0A-B10B-8D3CE22B2D07}.SingleImage|x86.Build.0 = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.CD_ROM|x86.ActiveCfg = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.CD_ROM|x86.Build.0 = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.Debug|x86.ActiveCfg = Debug|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.Debug|x86.Build.0 = Debug|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.DVD-5|x86.ActiveCfg = Debug|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.DVD-5|x86.Build.0 = Debug|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.Release|x86.ActiveCfg = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.Release|x86.Build.0 = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.SingleImage|x86.ActiveCfg = Release|x86
+		{8D07569D-3156-4432-A6FE-39020B7AB3A5}.SingleImage|x86.Build.0 = Release|x86
+		{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}.CD_ROM|x86.ActiveCfg = Release
+		{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}.Debug|x86.ActiveCfg = Debug
+		{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}.DVD-5|x86.ActiveCfg = Debug
+		{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}.Release|x86.ActiveCfg = Release
+		{3EB08F31-1F81-4A24-B0BB-394A98FAF2C6}.SingleImage|x86.ActiveCfg = Release
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.CD_ROM|x86.ActiveCfg = CD_ROM
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.CD_ROM|x86.Build.0 = CD_ROM
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.Debug|x86.ActiveCfg = DVD-5
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.Debug|x86.Build.0 = DVD-5
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.DVD-5|x86.ActiveCfg = DVD-5
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.DVD-5|x86.Build.0 = DVD-5
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.Release|x86.ActiveCfg = SingleImage
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.Release|x86.Build.0 = SingleImage
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.SingleImage|x86.ActiveCfg = SingleImage
+		{6F2EA216-9AB3-402A-B535-EFA1EDE23DF1}.SingleImage|x86.Build.0 = SingleImage
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
